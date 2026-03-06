@@ -1,0 +1,54 @@
+name: RustDesk Remote Desktop
+
+on:
+  workflow_dispatch:
+
+jobs:
+  desktop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+
+    - name: Update packages
+      run: sudo apt update
+
+    - name: Install desktop environment
+      run: |
+        sudo apt install -y xfce4 xfce4-goodies xvfb
+
+    - name: Install RustDesk
+      run: |
+        wget https://github.com/rustdesk/rustdesk/releases/latest/download/rustdesk-1.2.3-x86_64.deb
+        sudo dpkg -i rustdesk-1.2.3-x86_64.deb || sudo apt -f install -y
+
+    - name: Configure RustDesk
+      env:
+        SERVER: ${{ secrets.RUSTDESK_SERVER }}
+        RELAY: ${{ secrets.RUSTDESK_RELAY }}
+        KEY: ${{ secrets.RUSTDESK_KEY }}
+      run: |
+        mkdir -p ~/.config/rustdesk
+        echo "server=$SERVER" >> ~/.config/rustdesk/RustDesk.toml
+        echo "relay=$RELAY" >> ~/.config/rustdesk/RustDesk.toml
+        echo "key=$KEY" >> ~/.config/rustdesk/RustDesk.toml
+
+    - name: Start virtual display
+      run: |
+        Xvfb :0 -screen 0 1920x1080x24 &
+        export DISPLAY=:0
+
+    - name: Start desktop
+      run: |
+        export DISPLAY=:0
+        startxfce4 &
+
+    - name: Launch RustDesk
+      run: |
+        export DISPLAY=:0
+        rustdesk &
+
+    - name: Keep runner alive
+      run: |
+        echo "Runner started. Waiting for connection..."
+        while true; do sleep 300; done
