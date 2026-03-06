@@ -4,17 +4,16 @@ on:
   workflow_dispatch:
 
 jobs:
-  desktop:
+  rustdesk:
     runs-on: ubuntu-latest
     timeout-minutes: 360
 
     steps:
 
     - name: Update system
-      run: |
-        sudo apt update
+      run: sudo apt update
 
-    - name: Install desktop environment
+    - name: Install desktop packages
       run: |
         sudo apt install -y xfce4 xfce4-goodies xvfb dbus-x11 wget
 
@@ -26,22 +25,11 @@ jobs:
       run: |
         sudo apt install -y ./rustdesk-1.4.6-x86_64.deb
 
-    - name: Configure RustDesk Server
-      env:
-        SERVER: ${{ secrets.RUSTDESK_SERVER }}
-        RELAY: ${{ secrets.RUSTDESK_RELAY }}
-        KEY: ${{ secrets.RUSTDESK_KEY }}
-      run: |
-        mkdir -p ~/.config/rustdesk
-        echo "server=$SERVER" >> ~/.config/rustdesk/RustDesk.toml
-        echo "relay=$RELAY" >> ~/.config/rustdesk/RustDesk.toml
-        echo "key=$KEY" >> ~/.config/rustdesk/RustDesk.toml
-
     - name: Start virtual display
       run: |
         Xvfb :0 -screen 0 1920x1080x24 &
         echo "DISPLAY=:0" >> $GITHUB_ENV
-        sleep 3
+        sleep 5
 
     - name: Start DBus
       run: |
@@ -53,19 +41,20 @@ jobs:
         startxfce4 &
         sleep 10
 
-    - name: Start RustDesk
+    - name: Launch RustDesk with your server
+      env:
+        SERVER: ${{ secrets.RUSTDESK_SERVER }}
+        KEY: ${{ secrets.RUSTDESK_KEY }}
       run: |
         export DISPLAY=:0
-        rustdesk &
+        rustdesk --server $SERVER --key $KEY &
 
     - name: Print RustDesk ID
       run: |
-        sleep 10
+        sleep 15
         rustdesk --get-id
 
     - name: Keep runner alive
       run: |
-        echo "Runner ready. Connect using the RustDesk ID above."
-        while true; do
-          sleep 300
-        done
+        echo "RustDesk runner ready"
+        while true; do sleep 300; done
