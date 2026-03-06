@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  rustdesk-desktop:
+  desktop:
     runs-on: ubuntu-latest
     timeout-minutes: 360
 
@@ -13,11 +13,10 @@ jobs:
     - name: Update system
       run: |
         sudo apt update
-        sudo apt upgrade -y
 
     - name: Install desktop environment
       run: |
-        sudo apt install -y xfce4 xfce4-goodies xvfb dbus-x11 wget curl
+        sudo apt install -y xfce4 xfce4-goodies xvfb dbus-x11 wget
 
     - name: Download RustDesk
       run: |
@@ -42,20 +41,31 @@ jobs:
       run: |
         Xvfb :0 -screen 0 1920x1080x24 &
         echo "DISPLAY=:0" >> $GITHUB_ENV
+        sleep 3
 
-    - name: Start XFCE Desktop
+    - name: Start DBus
+      run: |
+        dbus-launch --exit-with-session > /dev/null
+
+    - name: Start XFCE desktop
       run: |
         export DISPLAY=:0
         startxfce4 &
+        sleep 10
 
-    - name: Launch RustDesk
+    - name: Start RustDesk
       run: |
         export DISPLAY=:0
         rustdesk &
 
+    - name: Print RustDesk ID
+      run: |
+        sleep 10
+        rustdesk --get-id
+
     - name: Keep runner alive
       run: |
-        echo "Runner is ready for RustDesk connection"
+        echo "Runner ready. Connect using the RustDesk ID above."
         while true; do
           sleep 300
         done
