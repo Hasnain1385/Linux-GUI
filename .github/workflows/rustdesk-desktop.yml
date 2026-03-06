@@ -4,25 +4,30 @@ on:
   workflow_dispatch:
 
 jobs:
-  desktop:
+  rustdesk-desktop:
     runs-on: ubuntu-latest
     timeout-minutes: 360
 
     steps:
 
-    - name: Update packages
-      run: sudo apt update
+    - name: Update system
+      run: |
+        sudo apt update
+        sudo apt upgrade -y
 
     - name: Install desktop environment
       run: |
-        sudo apt install -y xfce4 xfce4-goodies xvfb
+        sudo apt install -y xfce4 xfce4-goodies xvfb dbus-x11 wget curl
+
+    - name: Download RustDesk
+      run: |
+        wget https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.deb
 
     - name: Install RustDesk
       run: |
-        wget https://github.com/rustdesk/rustdesk/releases/latest/download/rustdesk-1.2.3-x86_64.deb
-        sudo dpkg -i rustdesk-1.2.3-x86_64.deb || sudo apt -f install -y
+        sudo apt install -y ./rustdesk-1.4.6-x86_64.deb
 
-    - name: Configure RustDesk
+    - name: Configure RustDesk Server
       env:
         SERVER: ${{ secrets.RUSTDESK_SERVER }}
         RELAY: ${{ secrets.RUSTDESK_RELAY }}
@@ -36,9 +41,9 @@ jobs:
     - name: Start virtual display
       run: |
         Xvfb :0 -screen 0 1920x1080x24 &
-        export DISPLAY=:0
+        echo "DISPLAY=:0" >> $GITHUB_ENV
 
-    - name: Start desktop
+    - name: Start XFCE Desktop
       run: |
         export DISPLAY=:0
         startxfce4 &
@@ -50,5 +55,7 @@ jobs:
 
     - name: Keep runner alive
       run: |
-        echo "Runner started. Waiting for connection..."
-        while true; do sleep 300; done
+        echo "Runner is ready for RustDesk connection"
+        while true; do
+          sleep 300
+        done
